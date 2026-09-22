@@ -1,0 +1,13 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+*.tfplan
+tfplan*
+override.tf
+override.tf.json
+*_override.tf
+*.auto.tfvars
+.terraformrc
+terraform.rc
+# Keep .terraform.lock.hcl committed

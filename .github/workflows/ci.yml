@@ -1,0 +1,23 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: [self-hosted, linux] # GHES runners
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform fmt -check -recursive
+      - uses: terraform-linters/setup-tflint@v4
+      - run: tflint --init && tflint --recursive
+      - name: Validate examples
+        run: |
+          for d in examples/*/; do
+            terraform -chdir="$d" init -backend=false
+            terraform -chdir="$d" validate
+          done
+      - run: terraform init -backend=false && terraform test
