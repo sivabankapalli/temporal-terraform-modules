@@ -3,11 +3,6 @@
 # project-level access yet (tracked upstream as project_accesses; see docs/CONTRIBUTING.md
 # in this repo). Until that ships, "project admin" is modelled as an account-level custom
 # role scoped to this one project via resource_type = "projects".
-#
-# LOCAL POC ONLY: sources below are absolute paths, not the "../module-name" this file ships
-# with in the real repo. Terraform treats an absolute-path module as its own package and won't
-# let "../" escape it, so the normal relative sources fail here. Revert to "../custom-role" etc.
-# before this file goes anywhere near the real temporal-tf-modules repo.
 locals {
   base_name = "${var.owner}-project-admin-${var.environment}"
 }
@@ -30,8 +25,8 @@ module "admin_service_account" {
 
   name        = "sa-${local.base_name}"
   description = "Project admin automation for ${var.environment}."
-  # The provider requires account_access or namespace_scoped_access set; a custom role alone
-  # isn't enough.
+  # Same requirement as the two account-level service accounts in the PoC caller: the provider
+  # needs account_access or namespace_scoped_access set, a custom role alone isn't enough.
   account_access              = "read"
   account_access_custom_roles = [module.admin_role.id]
 }
@@ -39,7 +34,11 @@ module "admin_service_account" {
 module "admin_group_access" {
   source = "C:/siva/solutions/temporal/source/temporal-terraform-modules/modules/group-access"
 
-  group_id                    = var.admin_group_id
-  account_access              = "none"
+  group_id = var.admin_group_id
+  # "none" + a non-empty account_access_custom_roles is rejected server-side ("invalid account
+  # role") -- ROLE_UNSPECIFIED apparently can't be sent explicitly alongside custom roles, only
+  # omitted entirely (which the module only does when there are zero custom roles too). "read"
+  # is the narrowest real role available, narrowed further in practice by the custom role.
+  account_access              = "read"
   account_access_custom_roles = [module.admin_role.id]
 }
